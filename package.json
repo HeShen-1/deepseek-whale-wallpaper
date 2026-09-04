@@ -3,6 +3,25 @@
   "version": "0.2.0",
   "description": "DeepSeek Harness particle-whale wallpaper for the web client",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HeShen-1/deepseek-whale-wallpaper.git"
+  },
+  "homepage": "https://heshen-1.github.io/deepseek-whale-wallpaper/",
+  "bugs": {
+    "url": "https://github.com/HeShen-1/deepseek-whale-wallpaper/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek",
+    "deepseek-harness",
+    "wallpaper",
+    "webgl",
+    "particles",
+    "theme",
+    "plugin"
+  ],
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
@@ -13,10 +32,9 @@
     "lib/index.js",
     "lib/client.js",
     "lib/*.map",
-    "docs/screenshots/*.jpg",
-    "docs/screenshots/*.gif",
     "cordis.patch.yml",
     "README.md",
+    "README.zh-CN.md",
     "LICENSE"
   ],
   "dsh": {

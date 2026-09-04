@@ -1,2 +1,5 @@
 node_modules/
 .preview/
+.agents/
+.codex/
+.DS_Store

@@ -14,6 +14,22 @@
 
 ![浅色模式动态演示：墨黑点阵鲸鱼与指针粒子涡流](docs/screenshots/harness-whale-light.gif)
 
+### 真实 Harness 界面
+
+以下素材采集自插件实际部署的 DeepSeek Harness Web UI：壁纸层位于应用框架下方，侧栏、会话画布与输入区照常使用，指针划过时粒子在界面背后绕流。
+
+| 浅色界面 | 深色界面 |
+| --- | --- |
+| ![真实 Harness 浅色界面](docs/screenshots/harness-ui-light.jpg) | ![真实 Harness 深色界面](docs/screenshots/harness-ui-dark.jpg) |
+
+浅色界面动效：
+
+![真实 Harness 浅色界面动效](docs/screenshots/harness-ui-light.gif)
+
+深色界面动效：
+
+![真实 Harness 深色界面动效](docs/screenshots/harness-ui-dark.gif)
+
 ## 行为
 
 - 鲸鱼轮廓直接采样自仓库中的 `favicon.svg` 路径，WebGL2 默认约 1,750 个规则网格点。

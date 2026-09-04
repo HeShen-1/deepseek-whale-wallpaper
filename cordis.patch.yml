@@ -1,0 +1,10 @@
+- insert:
+    - id: harness-whale-wallpaper
+      name: dsh-plugin-harness-whale
+      config:
+        enabled: true
+        quality: auto
+        brightness: 0.9
+        scale: 1
+        interactionStrength: 1
+        activeDimming: 0.22

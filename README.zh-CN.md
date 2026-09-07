@@ -9,6 +9,8 @@
 
 [English](README.md) | **简体中文**
 
+> 📣 已收录 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) —— DeepSeek Harness 插件精选列表。
+
 ## ✨ 效果演示
 
 浅色与深色模式均为动态壁纸：鲸鱼持续呼吸、缓慢转身，雾层漂移；指针划过鲸鱼时，周围粒子产生连续液态涡流与向外扩散的径向亮度波，离开后约 650ms 柔和归位。下方 GIF 为 2 倍速录制，实际节奏更舒缓。**[打开在线预览 →](https://heshen-1.github.io/deepseek-whale-wallpaper/)**

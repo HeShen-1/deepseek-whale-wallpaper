@@ -9,6 +9,8 @@
 
 **[English](README.md)** | [简体中文](README.zh-CN.md)
 
+> 📣 Listed in [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) — the curated DeepSeek Harness plugin list.
+
 ## ✨ Demo
 
 Both themes are live wallpapers: the whale keeps breathing and turning, mist drifts, and when your pointer crosses the whale, nearby particles form a continuous liquid vortex with an outward radial glow wave, then softly settle back (~650 ms). GIFs below run at 2× speed — the real pace is calmer. **[Try the live preview →](https://heshen-1.github.io/deepseek-whale-wallpaper/)**

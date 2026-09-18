@@ -13,7 +13,7 @@
 
 ## ✨ Demo
 
-Both themes are live wallpapers: the whale keeps breathing and turning, mist drifts, and when your pointer crosses the whale, nearby particles swirl around it like a liquid vortex (motion only — no glow or ring) and softly settle back (~800 ms). GIFs below run at 2× speed — the real pace is calmer. **[Try the live preview →](https://heshen-1.github.io/deepseek-whale-wallpaper/)**
+Both themes are live wallpapers: the whale keeps breathing and turning, mist drifts, and when your pointer crosses the whale, nearby particles swirl around it like a liquid vortex (motion only — no glow or ring) and softly settle back (~800 ms). GIFs below run at exactly 2× speed — 18 frames of 100 ms of animation each, captured through a deterministic clock rather than a screen recorder, so no frame is a time lapse and the real pace is calmer. **[Try the live preview →](https://heshen-1.github.io/deepseek-whale-wallpaper/)**
 
 ### Dark mode
 
@@ -128,10 +128,22 @@ pnpm install
 pnpm build     # rebuild lib/ + preview.js
 pnpm check     # bundle, shell-contract and palette checks
 pnpm compat    # does the installed Harness still expose every hook?
+pnpm shots     # re-shoot the README stills + GIFs from the preview
 
 # standalone preview (same renderer as the plugin)
 python3 -m http.server 4173   # then open http://127.0.0.1:4173/
 ```
+
+`pnpm shots` drives the preview through `scripts/demo-clock.js` instead of
+recording wall time: every captured frame advances exactly 100 ms of animation
+in 60 Hz slices, and the 18 frames are assembled at 50 ms each — the 2× the demo
+section promises. Recording wall time does not survive a screenshot loop (one
+shot costs ~1 s, so the "100 ms apart" frames land ~1 s apart and the GIF becomes
+a ~20× time lapse) and the renderer's slow-machine guards fire while it runs, so
+the captured look drifts from the shipped one. The script needs `agent-browser`
+on `PATH` and `python3` with Pillow; `--url` captures an already-running page
+instead (that is how the "inside the real Harness UI" shots are taken), and
+`--prefix` renames the pair it writes.
 
 The preview takes its state from the query string, so a specific look can be linked
 or reloaded: `?theme=light|dark`, `?preset=calm|vivid`, `?brightness=0.35..1.4`,

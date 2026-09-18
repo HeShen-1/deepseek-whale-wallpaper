@@ -1,5 +1,38 @@
 # Changelog
 
+## Demo captures — 2026-09-18 (asset fix, no plugin change)
+
+The README animations were captured on wall time, and wall time does not survive
+a screenshot loop.
+
+- **Why the demo shook.** One `agent-browser screenshot` call costs about a
+  second, so the "18 frames, ~100 ms apart" the shoot scripts asked for actually
+  landed **1.0 s apart** — measured, the shipped capture spans 27.4 s of
+  animation across its 18 frames. Assembled at 50 ms per frame, the documented
+  2x, the GIF therefore played a ~30x time lapse: the 11 s breath, the 29 s turn
+  and the pointer vortex all arrived ten times too fast, and the pointer parallax
+  swept the whole whale within one 0.9 s loop. Nothing was wrong with the
+  wallpaper; the GIF was a time lapse.
+- **Why the whale also changed brightness mid-loop.** During those ~25 s of
+  capture the renderer's own slow-machine guards fired: the glow pass turns
+  itself off after 90 frames slower than 24 ms (`data-glow="off"`). The shipped
+  dark GIF shows exactly that at frame 9 of 18 — dot peaks 154 → 114 and halo
+  pixels (60..100) 5400 → 0 — and then snaps back at the start of every loop.
+- **Fix.** `scripts/demo-clock.js` is a page-side deterministic clock: it takes
+  over `requestAnimationFrame` and the CSS mist animations, and `advance(ms)`
+  renders exactly `ms` of animation in 60 Hz slices, so every captured frame is a
+  known step and no guard ever sees a slow frame. `scripts/demo-shots.mjs`
+  (`pnpm shots`) serves the preview, installs that clock, captures the still plus
+  18 frames of 100 ms, and assembles them at 50 ms per frame — the 2x the demo
+  section promises. `--url` points the same shooter at an already-running page,
+  which is how the "inside the real Harness UI" shots are taken; their throw-away
+  home also needs the first-run API-key gate out of the way, because its mask
+  (`rgba(0, 0, 0, 0.5)`) halves every pixel of the wallpaper behind it.
+- **Regenerated:** `harness-whale-{dark,light}.gif` and
+  `harness-ui-{dark,light}.gif` — all 18 frames at full glow, a 1.8 s loop at
+  exactly 2x, reproducible frame for frame on any machine. The `.jpg` stills were
+  already correct and are unchanged.
+
 ## 0.3.11 — 2026-09-18
 
 Surviving the next Harness update: preflight, live status, and dead selectors found.

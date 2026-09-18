@@ -54,7 +54,8 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "check": "node scripts/check.mjs",
-    "compat": "node scripts/dsh-compat.mjs"
+    "compat": "node scripts/dsh-compat.mjs",
+    "shots": "node scripts/demo-shots.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/schemastery": "^3.18.1",

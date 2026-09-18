@@ -20,3 +20,60 @@ body {
   height: 100%;
   pointer-events: none;
 }
+
+/* Preview controls: theme, brightness, quality (built by src/preview.ts). */
+.preview-controls {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2;
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font: 13px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #dbe8f7;
+  background: rgba(6, 17, 34, 0.72);
+  border: 1px solid rgba(153, 190, 232, 0.18);
+  backdrop-filter: blur(10px);
+}
+
+body:not([data-ds-dark-theme]) .preview-controls {
+  color: #10233d;
+  background: rgba(247, 251, 255, 0.82);
+  border-color: rgba(76, 105, 142, 0.18);
+}
+
+.preview-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-controls button {
+  font: inherit;
+  color: inherit;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+.preview-controls button[aria-pressed="true"] {
+  opacity: 1;
+  background: rgba(127, 170, 232, 0.22);
+}
+
+.preview-controls input[type="range"] {
+  width: 120px;
+  accent-color: #7faae8;
+}
+
+.preview-controls span {
+  min-width: 32px;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+

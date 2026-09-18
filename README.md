@@ -1,7 +1,6 @@
 # 🐋 Harness Whale Wallpaper
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![npm version](https://img.shields.io/npm/v/dsh-plugin-harness-whale)](https://www.npmjs.com/package/dsh-plugin-harness-whale)
 [![Platform](https://img.shields.io/badge/platform-dsh%20web-6c7ee1.svg)](#compatibility)
 [![dsh compat](https://img.shields.io/badge/dsh-0.1.6--alpha.1-8da2ce.svg)](#compatibility)
 
@@ -37,17 +36,9 @@ Captured from a live DeepSeek Harness web client. The wallpaper layer sits *bene
 
 ## 📦 Install
 
-Requires the DeepSeek Harness dev-preview (`@deepseek-ai/dsh`) with its `web` profile and `pnpm` on `PATH`.
+Requires the DeepSeek Harness dev-preview (`@deepseek-ai/dsh`) with its `web` profile.
 
-### A. One line via npm (recommended)
-
-```bash
-dsh plugin --profile web add dsh-plugin-harness-whale
-```
-
-Restart `dsh web` and refresh [http://127.0.0.1:3080](http://127.0.0.1:3080) — the whale appears behind the app. The command installs the package into your profile and registers its bundle layer automatically; tweak the config in `~/.dsh/profiles/web/cordis.patch.yml` if you want non-default values.
-
-### B. From a release tarball
+### A. From a release tarball
 
 1. Download `dsh-plugin-harness-whale-<version>.tgz` from [Releases](https://github.com/HeShen-1/deepseek-whale-wallpaper/releases) and extract the `package/` folder to:
 
@@ -70,9 +61,9 @@ Restart `dsh web` and refresh [http://127.0.0.1:3080](http://127.0.0.1:3080) —
            activeDimming: 0.22
    ```
 
-3. Restart `dsh web`.
+3. Restart `dsh web` and refresh [http://127.0.0.1:3080](http://127.0.0.1:3080) — the whale appears behind the app. Tweak the values above for a non-default look.
 
-### C. Look before you leap
+### B. Look before you leap
 
 Open the **[online preview](https://heshen-1.github.io/deepseek-whale-wallpaper/)** — the same render kernel as the plugin, no install needed.
 
@@ -154,17 +145,17 @@ screenshots above). The same panel is on the [live preview](https://heshen-1.git
 
 ## ❓ FAQ & troubleshooting
 
-**No whale after installing?** Restart `dsh web` (the client bundle composes at boot), then refresh. Verify with `dsh plugin --profile web why dsh-plugin-harness-whale` (npm route) or that the `insert` entry exists in `~/.dsh/profiles/web/cordis.patch.yml` (tarball route). The page body should carry `data-dsh-harness-whale="true"`.
+**No whale after installing?** Restart `dsh web` (the client bundle composes at boot), then refresh. Check that the `insert` entry exists in `~/.dsh/profiles/web/cordis.patch.yml`. The page body should carry `data-dsh-harness-whale="true"`.
 
-**pnpm ≥ 10 blocked the install script?** This plugin declares no lifecycle scripts, so nothing is blocked — no `allowBuilds` entry is needed.
+**Does `dsh plugin --profile web add dsh-plugin-harness-whale` install this?** No — the npm registry still only carries the old 0.2.0, and 0.3.x is not published there. Use the [release tarball](#a-from-a-release-tarball).
 
 **Frame drops / fan noise?** Set `quality: low` or `medium`, lower `brightness`, or reduce `interactionStrength`. `auto` already steps quality down under sustained drops.
 
 **No WebGL2 in your browser?** The static Canvas2D fallback renders automatically — you get the still dot-matrix whale instead.
 
-**Uninstall.** npm route: `dsh plugin --profile web remove dsh-plugin-harness-whale`. Tarball route: remove the `insert` entry and delete `~/.dsh/profiles/node_modules/dsh-plugin-harness-whale`. Either way the original theme and layout come back after a restart.
+**Uninstall.** Remove the `insert` entry and delete `~/.dsh/profiles/node_modules/dsh-plugin-harness-whale`; the original theme and layout come back after a restart.
 
-**Updating.** npm route: `dsh plugin --profile web add dsh-plugin-harness-whale@latest`. Tarball route: extract the new release over the old directory. Restart `dsh web` afterwards.
+**Updating.** Extract the new release over the old directory, then restart `dsh web`. Every version is kept in [`release/`](release) for a one-command rollback.
 
 ## 🔭 Compatibility
 

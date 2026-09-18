@@ -1,7 +1,6 @@
 # 🐋 Harness Whale Wallpaper 鲸鱼壁纸
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![npm version](https://img.shields.io/npm/v/dsh-plugin-harness-whale)](https://www.npmjs.com/package/dsh-plugin-harness-whale)
 [![Platform](https://img.shields.io/badge/platform-dsh%20web-6c7ee1.svg)](#兼容范围)
 [![dsh compat](https://img.shields.io/badge/dsh-0.1.6--alpha.1-8da2ce.svg)](#兼容范围)
 
@@ -37,17 +36,9 @@
 
 ## 📦 安装
 
-要求 DeepSeek Harness dev-preview（`@deepseek-ai/dsh`）的 `web` profile，`pnpm` 在 `PATH` 上。
+要求 DeepSeek Harness dev-preview（`@deepseek-ai/dsh`）的 `web` profile。
 
-### 方式 A：npm 一行安装（推荐）
-
-```bash
-dsh plugin --profile web add dsh-plugin-harness-whale
-```
-
-重启 `dsh web` 后刷新 [http://127.0.0.1:3080](http://127.0.0.1:3080)，鲸鱼就会出现在界面背后。该命令会把包装进 profile 并自动注册 bundle 层；如需非默认配置，在 `~/.dsh/profiles/web/cordis.patch.yml` 里覆盖。
-
-### 方式 B：从 Release tarball 安装
+### 方式 A：从 Release tarball 安装
 
 1. 从 [Releases](https://github.com/HeShen-1/deepseek-whale-wallpaper/releases) 下载 `dsh-plugin-harness-whale-<version>.tgz`，把其中 `package/` 目录解压到：
 
@@ -70,9 +61,9 @@ dsh plugin --profile web add dsh-plugin-harness-whale
            activeDimming: 0.22
    ```
 
-3. 重启 `dsh web`。
+3. 重启 `dsh web` 后刷新 [http://127.0.0.1:3080](http://127.0.0.1:3080)，鲸鱼就会出现在界面背后。想要非默认效果，改上面那段配置即可。
 
-### 方式 C：先看效果
+### 方式 B：先看效果
 
 打开**[在线预览](https://heshen-1.github.io/deepseek-whale-wallpaper/)**——与插件同一渲染内核，无需安装。
 
@@ -150,17 +141,17 @@ GIF 就成了约 20 倍速的延时片，且慢机保护会在中途关掉光晕
 
 ## ❓ FAQ 与故障排查
 
-**装完没有鲸鱼？** 重启 `dsh web`（客户端 bundle 在启动时组合）后刷新。npm 安装路径用 `dsh plugin --profile web why dsh-plugin-harness-whale` 验证；tarball 路径检查 `~/.dsh/profiles/web/cordis.patch.yml` 是否有 `insert` 条目。页面 body 应带有 `data-dsh-harness-whale="true"`。
+**装完没有鲸鱼？** 重启 `dsh web`（客户端 bundle 在启动时组合）后刷新。检查 `~/.dsh/profiles/web/cordis.patch.yml` 是否有 `insert` 条目。页面 body 应带有 `data-dsh-harness-whale="true"`。
 
-**pnpm ≥ 10 提示阻止了安装脚本？** 本插件没有声明任何 lifecycle 脚本，不会触发阻止——无需配置 `allowBuilds`。
+**`dsh plugin --profile web add dsh-plugin-harness-whale` 装的是这个吗？** 不是——npm registry 上目前只有旧的 0.2.0，0.3.x 并未发布。请用[Release tarball](#方式-a从-release-tarball-安装)。
 
 **掉帧 / 风扇狂转？** 把 `quality` 设为 `low` 或 `medium`，降低 `brightness` 或 `interactionStrength`。`auto` 本身就会在持续掉帧后自动降档。
 
 **浏览器没有 WebGL2？** 会自动渲染静态 Canvas2D 点阵鲸鱼作为回退。
 
-**卸载。** npm 路径：`dsh plugin --profile web remove dsh-plugin-harness-whale`。tarball 路径：从 `cordis.patch.yml` 移除 `insert` 注册项并删除 `~/.dsh/profiles/node_modules/dsh-plugin-harness-whale` 目录。两种方式重启后都会恢复原主题与布局。
+**卸载。** 从 `cordis.patch.yml` 移除 `insert` 注册项并删除 `~/.dsh/profiles/node_modules/dsh-plugin-harness-whale` 目录；重启后恢复原主题与布局。
 
-**更新。** npm 路径：`dsh plugin --profile web add dsh-plugin-harness-whale@latest`。tarball 路径：用新版本 tarball 覆盖旧目录。之后重启 `dsh web`。
+**更新。** 用新版本 tarball 覆盖旧目录，然后重启 `dsh web`。每个历史版本都留在 [`release/`](release) 里，便于一条命令回滚。
 
 ## 🔭 兼容范围
 

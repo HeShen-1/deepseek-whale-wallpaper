@@ -29,6 +29,12 @@ The reading scrim stops at the text, so the ink stops going grey.
   to the raw one: the floors are unchanged and now describe everything that is
   not behind text, and the behind-text contrast is bounded too, so a token change
   that quietly stops covering the glyphs fails the build.
+- **Install docs.** The release tarball is the documented route now. The npm
+  registry still only carries 0.2.0 and the 0.3.x line is not published there, so
+  both READMEs drop the `dsh plugin --profile web add` instructions and the npm
+  badge, the FAQ says plainly which version npm would hand out, and the v0.3.12
+  release page points at the tarball. `package.json` keeps its npm metadata for
+  whenever publishing is available again.
 
 ## Demo captures — 2026-09-18 (asset fix, no plugin change)
 

@@ -1,5 +1,7 @@
 import type { WallpaperConfig } from './config.ts'
 import { WhaleRenderer, type ActivityState, type WallpaperColorScheme } from './renderer.ts'
+import { watchReadingZones } from './reading-zone.ts'
+import { watchShellIntegrity } from './self-check.ts'
 
 export type ThemeTokenOverrides = Record<string, { light: string; dark: string }>
 
@@ -43,6 +45,9 @@ const THEME_STYLE = `
     --hww-code: rgba(220, 232, 248, 0.82);
     --hww-code-panel: rgba(239, 246, 255, 0.97);
     --hww-shadow: rgba(47, 72, 110, 0.15);
+    --hww-reading-scrim: rgba(244, 248, 255, 0.50);
+    --hww-reading-scrim-soft: rgba(244, 248, 255, 0.40);
+    --hww-hero-halo: rgba(248, 251, 255, 0.85);
     background: var(--hww-page) !important;
   }
 
@@ -60,6 +65,9 @@ const THEME_STYLE = `
     --hww-code: rgba(31, 62, 97, 0.72);
     --hww-code-panel: rgba(6, 20, 40, 0.96);
     --hww-shadow: rgba(0, 3, 10, 0.40);
+    --hww-reading-scrim: rgba(4, 9, 18, 0.46);
+    --hww-reading-scrim-soft: rgba(4, 9, 18, 0.38);
+    --hww-hero-halo: rgba(3, 8, 16, 0.90);
   }
 
   body[data-dsh-harness-whale="true"] #root {
@@ -69,9 +77,54 @@ const THEME_STYLE = `
     background: transparent !important;
   }
 
-  body[data-dsh-harness-whale="true"] #root > [data-slot="root"] > [data-details-collapsed],
-  body[data-dsh-harness-whale="true"] [data-slot="conversation"] > [data-phase] {
+  /*
+   * The shell frame (ui-layout AppFrame) paints --dsw-alias-bg-base across the
+   * viewport; keep it clear so the wallpaper holds full strength in the margins.
+   * It was matched as [data-details-collapsed] on Harness <= 0.1.2 and lost that
+   * attribute in 0.1.5, so it is matched structurally now.
+   */
+  body[data-dsh-harness-whale="true"] #root > [data-slot="root"] > * {
     background: transparent !important;
+  }
+
+  /*
+   * The conversation column carries running text, so it must not sit naked on
+   * the dot matrix. It takes a light reading scrim in every content phase
+   * (active, settling) while the welcome screen (hero) stays clear — the
+   * showcase keeps the full whale, reading gets a calm surface. The slot was
+   * named "conversation" on Harness <= 0.1.2 and "main.conversation" from 0.1.5.
+   */
+  body[data-dsh-harness-whale="true"] [data-slot="conversation"] > [data-phase],
+  body[data-dsh-harness-whale="true"] [data-slot="main.conversation"] > [data-phase] {
+    background: var(--hww-reading-scrim) !important;
+  }
+
+  body[data-dsh-harness-whale="true"] [data-slot="conversation"] > [data-phase="hero"],
+  body[data-dsh-harness-whale="true"] [data-slot="main.conversation"] > [data-phase="hero"] {
+    background: transparent !important;
+  }
+
+  /*
+   * While the renderer can actually measure the text blocks, the dots behind
+   * them shrink instead of fading, so the scrim only has to do the remainder.
+   * The data-hww-zones attribute is written by the reading-zone watcher; when
+   * measurement fails the attribute is off and the solid scrim above stays in
+   * force.
+   */
+  body[data-dsh-harness-whale="true"][data-hww-zones="on"] [data-slot="conversation"] > [data-phase],
+  body[data-dsh-harness-whale="true"][data-hww-zones="on"] [data-slot="main.conversation"] > [data-phase] {
+    background: var(--hww-reading-scrim-soft) !important;
+  }
+
+  /*
+   * Welcome-screen halo: the hero title is drawn straight over the whale, so a
+   * theme-coloured text-shadow (invisible on the pool, which is the same colour)
+   * clears the few pixels around each glyph where dots would break the letter
+   * edges. Inherited, so every hero label gets the same treatment.
+   */
+  body[data-dsh-harness-whale="true"] [data-slot="conversation"] > [data-phase="hero"],
+  body[data-dsh-harness-whale="true"] [data-slot="main.conversation"] > [data-phase="hero"] {
+    text-shadow: 0 0 10px var(--hww-hero-halo), 0 1px 3px var(--hww-hero-halo);
   }
 
   body[data-dsh-harness-whale="true"] [data-composer-card="true"] {
@@ -149,56 +202,63 @@ const THEME_STYLE = `
     opacity: 0.72;
   }
 
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] { color: var(--hww-text) !important; }
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] :is(h1, h2, h3, h4, strong) { color: var(--hww-text-bright) !important; }
+  /*
+   * Message content. Scoped to the conversation-session slot outlet and to plain
+   * elements: the previous div[class*="_markdown_"] prefix does not exist in
+   * current Harness bundles, so every rule under it was dead code (the compat
+   * preflight found it), and .md-code-block lives in another package entirely.
+   * The code-block hook is data-code-block-banner, which ui-chat does render.
+   */
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] { color: var(--hww-text) !important; }
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] :is(h1, h2, h3, h4, strong) { color: var(--hww-text-bright) !important; }
 
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] a {
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] a {
     color: var(--hww-link) !important;
     text-decoration-color: color-mix(in srgb, var(--hww-link) 42%, transparent) !important;
   }
 
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] code {
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] code {
     background: var(--hww-code) !important;
     color: var(--hww-text) !important;
     border: 1px solid var(--hww-border) !important;
     box-shadow: none !important;
   }
 
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] blockquote {
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] blockquote {
     background: var(--hww-surface) !important;
     border-color: color-mix(in srgb, var(--hww-link) 38%, transparent) !important;
     color: var(--hww-text-soft) !important;
   }
 
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] .md-code-block {
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] pre {
     overflow: hidden;
     background: var(--hww-code-panel) !important;
     border: 1px solid var(--hww-border) !important;
     box-shadow: 0 12px 34px var(--hww-shadow) !important;
   }
 
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] .md-code-block > div:first-child,
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] .md-code-block > div:first-child > div,
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] .md-code-block pre {
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] [data-code-block-banner],
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] [data-code-block-banner] > div,
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] pre {
     background: var(--hww-code-panel) !important;
     border-color: var(--hww-border) !important;
   }
 
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] .md-code-block pre,
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] .md-code-block pre code { color: var(--hww-text) !important; }
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] pre,
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] pre code { color: var(--hww-text) !important; }
 
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] .md-code-block pre code {
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] pre code {
     background: transparent !important;
     border: 0 !important;
   }
 
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] .md-code-block button {
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] [data-code-block-banner] button {
     background: var(--hww-surface-hover) !important;
     border: 1px solid var(--hww-border) !important;
     color: var(--hww-text-soft) !important;
   }
 
-  body[data-dsh-harness-whale="true"] div[class*="_markdown_"] .md-code-block button:hover {
+  body[data-dsh-harness-whale="true"] [data-slot="conversation.session"] [data-code-block-banner] button:hover {
     background: var(--hww-surface-selected) !important;
     color: var(--hww-text-bright) !important;
   }
@@ -209,19 +269,41 @@ const THEME_STYLE = `
     z-index: 0;
     overflow: hidden;
     pointer-events: none;
+    /* The pool: a lit water column behind the whale, a cooler floor glow under
+       it, and a diagonal base wash. Keep the entries here and in the dark block
+       below in the same order — they are one background, not three layers. */
     background:
-      radial-gradient(ellipse 68% 78% at 79% 48%, rgba(115, 158, 222, 0.22) 0%, rgba(205, 224, 249, 0.18) 43%, transparent 73%),
-      radial-gradient(ellipse 46% 36% at 64% 94%, rgba(155, 188, 229, 0.18), transparent 76%),
-      linear-gradient(118deg, #f8fbff 0%, #f4f8ff 45%, #eaf2fd 72%, #e5eefc 100%);
+      radial-gradient(ellipse 62% 74% at 77% 46%, rgba(150, 187, 236, 0.34) 0%, rgba(206, 228, 250, 0.20) 46%, transparent 74%),
+      radial-gradient(ellipse 46% 36% at 64% 94%, rgba(146, 184, 230, 0.26), transparent 76%),
+      radial-gradient(ellipse 90% 70% at 12% 8%, rgba(226, 238, 253, 0.55), transparent 70%),
+      linear-gradient(118deg, #f8fbff 0%, #eef5ff 45%, #e2edfc 72%, #dbe8fa 100%);
     isolation: isolate;
     transition: background 320ms ease;
   }
 
   body[data-ds-dark-theme] .dsh-harness-whale-wallpaper {
     background:
-      radial-gradient(ellipse 68% 78% at 79% 48%, rgba(29, 78, 143, 0.26) 0%, rgba(8, 35, 72, 0.12) 43%, transparent 73%),
-      radial-gradient(ellipse 46% 36% at 64% 94%, rgba(25, 61, 111, 0.16), transparent 76%),
-      linear-gradient(118deg, #03070e 0%, #061326 45%, #071c38 72%, #06162b 100%);
+      radial-gradient(ellipse 62% 74% at 77% 46%, rgba(30, 78, 146, 0.46) 0%, rgba(14, 44, 88, 0.26) 46%, transparent 74%),
+      radial-gradient(ellipse 46% 36% at 64% 94%, rgba(28, 74, 136, 0.30), transparent 76%),
+      radial-gradient(ellipse 90% 70% at 12% 8%, rgba(10, 32, 64, 0.45), transparent 70%),
+      linear-gradient(118deg, #040a14 0%, #071930 45%, #0a2344 72%, #08192f 100%);
+  }
+
+  /* The vivid preset lifts the pool and the mist for demos and screenshots. */
+  body[data-hww-preset="vivid"] .dsh-harness-whale-wallpaper {
+    background:
+      radial-gradient(ellipse 62% 74% at 77% 46%, rgba(122, 170, 232, 0.46) 0%, rgba(186, 216, 248, 0.26) 46%, transparent 74%),
+      radial-gradient(ellipse 46% 36% at 64% 94%, rgba(126, 170, 226, 0.34), transparent 76%),
+      radial-gradient(ellipse 90% 70% at 12% 8%, rgba(232, 242, 254, 0.68), transparent 70%),
+      linear-gradient(118deg, #f9fcff 0%, #e9f2ff 45%, #d9e8fb 72%, #cee0f7 100%);
+  }
+
+  body[data-ds-dark-theme][data-hww-preset="vivid"] .dsh-harness-whale-wallpaper {
+    background:
+      radial-gradient(ellipse 62% 74% at 77% 46%, rgba(44, 104, 184, 0.58) 0%, rgba(20, 58, 112, 0.32) 46%, transparent 74%),
+      radial-gradient(ellipse 46% 36% at 64% 94%, rgba(38, 96, 168, 0.38), transparent 76%),
+      radial-gradient(ellipse 90% 70% at 12% 8%, rgba(14, 42, 82, 0.55), transparent 70%),
+      linear-gradient(118deg, #050c1a 0%, #0a2140 45%, #0e2d58 72%, #0a1f3c 100%);
   }
 
   .dsh-harness-whale-wallpaper::before,
@@ -229,21 +311,27 @@ const THEME_STYLE = `
     content: "";
     position: absolute;
     inset: -16%;
-    opacity: 0.32;
+    opacity: 0.42;
     filter: blur(48px);
     will-change: transform;
   }
 
   body[data-ds-dark-theme] .dsh-harness-whale-wallpaper::before,
-  body[data-ds-dark-theme] .dsh-harness-whale-wallpaper::after { opacity: 0.42; }
+  body[data-ds-dark-theme] .dsh-harness-whale-wallpaper::after { opacity: 0.55; }
+
+  body[data-hww-preset="vivid"] .dsh-harness-whale-wallpaper::before,
+  body[data-hww-preset="vivid"] .dsh-harness-whale-wallpaper::after { opacity: 0.62; }
+
+  body[data-ds-dark-theme][data-hww-preset="vivid"] .dsh-harness-whale-wallpaper::before,
+  body[data-ds-dark-theme][data-hww-preset="vivid"] .dsh-harness-whale-wallpaper::after { opacity: 0.78; }
 
   .dsh-harness-whale-wallpaper::before {
-    background: radial-gradient(ellipse 32% 18% at 74% 58%, rgba(76, 122, 187, 0.15), transparent 72%);
+    background: radial-gradient(ellipse 34% 20% at 74% 58%, rgba(96, 146, 214, 0.26), transparent 72%);
     animation: dsh-whale-mist-a 52s ease-in-out infinite alternate;
   }
 
   .dsh-harness-whale-wallpaper::after {
-    background: radial-gradient(ellipse 28% 22% at 84% 28%, rgba(37, 90, 159, 0.12), transparent 75%);
+    background: radial-gradient(ellipse 30% 24% at 84% 28%, rgba(58, 118, 196, 0.22), transparent 75%);
     animation: dsh-whale-mist-b 71s ease-in-out infinite alternate;
   }
 
@@ -291,18 +379,57 @@ export function mountWallpaper(
 
   const layer = document.createElement('div')
   layer.className = 'dsh-harness-whale-wallpaper'
+  layer.dataset.version = __HWW_VERSION__
   layer.setAttribute('aria-hidden', 'true')
   const canvas = document.createElement('canvas')
   layer.append(canvas)
   document.body.prepend(layer)
   document.body.setAttribute('data-dsh-harness-whale', 'true')
 
+  document.body.setAttribute('data-hww-preset', config.preset)
   const renderer = new WhaleRenderer(canvas, config, colorScheme)
+  let activeScheme: WallpaperColorScheme = colorScheme
+  // Surfaces this plugin paints on purpose: hiding the wallpaper behind one of
+  // them (reading scrim, composer card, code panel, sidebar fill) is a decision,
+  // not the shell drifting back over the canvas.
+  const ownSurfaces = (): string[] => {
+    const style = getComputedStyle(document.body)
+    const derived = [
+      '--hww-page',
+      '--hww-surface',
+      '--hww-surface-strong',
+      '--hww-code',
+      '--hww-code-panel',
+      '--hww-reading-scrim',
+      '--hww-reading-scrim-soft',
+    ].map((name) => style.getPropertyValue(name).trim())
+    return [
+      ...Object.values(THEME_TOKEN_OVERRIDES).flatMap((modes) => [modes.light, modes.dark]),
+      ...derived,
+    ].filter((value) => value !== '')
+  }
+  document.documentElement.setAttribute('data-hww-status', 'ok')
+  const shellWatch = watchShellIntegrity(__HWW_VERSION__, () => activeScheme, ownSurfaces)
+  const zoneWatch = watchReadingZones((rects, showcase) => {
+    renderer.setReadingZones(rects)
+    renderer.setShowcase(showcase)
+    document.body.setAttribute('data-hww-zones', rects === null ? 'off' : 'on')
+    document.body.setAttribute('data-hww-showcase', showcase ? 'on' : 'off')
+  })
   return {
     renderer,
     setActivity: (state) => renderer.setActivity(state),
-    setColorScheme: (scheme) => renderer.setColorScheme(scheme),
+    setColorScheme: (scheme) => {
+      activeScheme = scheme
+      renderer.setColorScheme(scheme)
+    },
     dispose: () => {
+      document.documentElement.removeAttribute('data-hww-status')
+      zoneWatch.dispose()
+      document.body.removeAttribute('data-hww-preset')
+      document.body.removeAttribute('data-hww-zones')
+      document.body.removeAttribute('data-hww-showcase')
+      shellWatch.dispose()
       renderer.destroy()
       layer.remove()
       style.remove()

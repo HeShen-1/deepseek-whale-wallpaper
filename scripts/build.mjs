@@ -1,10 +1,15 @@
 import { build } from 'esbuild'
+import { readFile } from 'node:fs/promises'
+
+const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'))
 
 const shared = {
   bundle: true,
   sourcemap: true,
   target: ['es2022'],
   logLevel: 'info',
+  // Stamped onto the wallpaper layer so a live page can report its build.
+  define: { __HWW_VERSION__: JSON.stringify(pkg.version) },
 }
 
 await Promise.all([

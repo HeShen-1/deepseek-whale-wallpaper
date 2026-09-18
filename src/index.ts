@@ -5,10 +5,12 @@ export const name = 'harness-whale-wallpaper'
 export const inject = ['webServer']
 
 export type Quality = 'auto' | 'low' | 'medium' | 'high'
+export type Preset = 'calm' | 'vivid'
 
 export interface Config {
   enabled: boolean
   quality: Quality
+  preset: Preset
   brightness: number
   scale: number
   interactionStrength: number
@@ -18,6 +20,7 @@ export interface Config {
 export const Config: Schema<Config> = Schema.object({
   enabled: Schema.boolean().default(true),
   quality: Schema.union(['auto', 'low', 'medium', 'high']).default('auto'),
+  preset: Schema.union(['calm', 'vivid']).default('calm'),
   brightness: Schema.number().min(0.35).max(1.4).default(0.9),
   scale: Schema.number().min(0.72).max(1.25).default(1),
   interactionStrength: Schema.number().min(0).max(1.5).default(1),

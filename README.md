@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![npm version](https://img.shields.io/npm/v/dsh-plugin-harness-whale)](https://www.npmjs.com/package/dsh-plugin-harness-whale)
 [![Platform](https://img.shields.io/badge/platform-dsh%20web-6c7ee1.svg)](#compatibility)
-[![dsh compat](https://img.shields.io/badge/dsh-0.1.1--rc.2-8da2ce.svg)](#compatibility)
+[![dsh compat](https://img.shields.io/badge/dsh-0.1.6--alpha.1-8da2ce.svg)](#compatibility)
 
 **A live wallpaper plugin for the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) web UI** — the dot-matrix whale you know from DeepSeek, rebuilt as ≈1,750 breathing WebGL2 particles that slowly turn in the mist and swirl around your pointer like liquid. Light and dark themes both included. No branding, no particle connection-lines, no clutter.
 
@@ -13,7 +13,7 @@
 
 ## ✨ Demo
 
-Both themes are live wallpapers: the whale keeps breathing and turning, mist drifts, and when your pointer crosses the whale, nearby particles form a continuous liquid vortex with an outward radial glow wave, then softly settle back (~650 ms). GIFs below run at 2× speed — the real pace is calmer. **[Try the live preview →](https://heshen-1.github.io/deepseek-whale-wallpaper/)**
+Both themes are live wallpapers: the whale keeps breathing and turning, mist drifts, and when your pointer crosses the whale, nearby particles swirl around it like a liquid vortex (motion only — no glow or ring) and softly settle back (~800 ms). GIFs below run at 2× speed — the real pace is calmer. **[Try the live preview →](https://heshen-1.github.io/deepseek-whale-wallpaper/)**
 
 ### Dark mode
 
@@ -86,7 +86,7 @@ Override per-profile via `cordis.patch.yml`; defaults live in the plugin's own [
 | `quality` | `auto` | `auto` / `low` / `medium` / `high` |
 | `brightness` | `0.9` | Whale brightness, 0.35–1.4 |
 | `scale` | `1` | Whale size, 0.72–1.25 |
-| `interactionStrength` | `1` | Parallax, local glow and vortex strength, 0–1.5 |
+| `interactionStrength` | `1` | Parallax and vortex strength, 0–1.5 |
 | `activeDimming` | `0.22` | Opacity while typing/running, 0.12–0.6 |
 
 Values are validated host-side by Schemastery and served to the client through a same-origin read-only endpoint. If public slots or required services are missing in your Harness build, the plugin logs a clear error and stops safely.
@@ -94,11 +94,11 @@ Values are validated host-side by Schemastery and served to the client through a
 ## 🌊 Behavior
 
 - The whale outline is sampled directly from the `favicon.svg` path in this repo — WebGL2 renders ≈1,750 regular grid points.
-- ~11 s vertical breathing, a ~29 s slow turn, plus tail-fin motion and gentle buoyancy; the pointer adds ~6° parallax, positional offset and an outward-spreading local brightness wave.
-- Inside the whale, particles within ~160 px of the pointer form a continuous liquid vortex with a mild alternating radial wave — no hollow core forms; after the pointer leaves they settle back softly in ~650 ms. The base dot matrix is never modified.
-- Follows the Harness appearance setting (light / dark / system): dark keeps white→ice-blue particles, light switches to high-contrast ink `#050b14`, with matching semantic tokens, mist layers and background.
+- ~11 s vertical breathing, a ~29 s slow turn, plus tail-fin motion and gentle buoyancy; the pointer adds ~6° parallax and a positional offset.
+- Inside the whale, particles within ~200 px of the pointer form a continuous liquid vortex (motion-only feedback, no brightness or size change); after the pointer leaves they settle back softly in ~800 ms. The base dot matrix is never modified.
+- Follows the Harness appearance setting (light / dark / system): dark keeps white→ice-blue particles over a deepened pool, light switches to high-contrast ink `#050b14` over a brightened pool, with matching semantic tokens, mist layers and background.
 - Both themes expose the full-screen base layer behind the app frame; sidebar, inputs, conversation content and settings windows keep their own surfaces — no full-screen veil washing out the dots.
-- Full brightness with no session open; ~72 % once a session opens; at least 34 % while typing or a task runs (still honors a stronger `activeDimming`), ~600 ms transitions.
+- Full brightness with no session open; ~78 % once a session opens; at least 50 % while typing or a task runs (still honors a stronger `activeDimming`), ~600 ms transitions.
 - Pauses when the page is hidden; completely still under `prefers-reduced-motion: reduce`.
 - DPR capped at 1.5; `auto` steps down high → medium → low after sustained frame drops.
 - Without WebGL2, a static Canvas2D dot-matrix whale is rendered automatically.
@@ -126,11 +126,17 @@ Zero runtime dependencies; three devDependencies (esbuild, typescript, schemaste
 ```bash
 pnpm install
 pnpm build     # rebuild lib/ + preview.js
-pnpm check     # schema & bundle sanity checks
+pnpm check     # bundle, shell-contract and palette checks
+pnpm compat    # does the installed Harness still expose every hook?
 
 # standalone preview (same renderer as the plugin)
 python3 -m http.server 4173   # then open http://127.0.0.1:4173/
 ```
+
+The preview takes its state from the query string, so a specific look can be linked
+or reloaded: `?theme=light|dark`, `?preset=calm|vivid`, `?brightness=0.35..1.4`,
+`?quality=low|medium|high`, and `?ui=0` to hide the control panel (used for the
+screenshots above). The same panel is on the [live preview](https://heshen-1.github.io/deepseek-whale-wallpaper/).
 
 ## ❓ FAQ & troubleshooting
 
@@ -148,7 +154,15 @@ python3 -m http.server 4173   # then open http://127.0.0.1:4173/
 
 ## 🔭 Compatibility
 
-Targets the browser web UI of `@deepseek-ai/dsh 0.1.1-rc.2`. The Harness is in dev-preview — if `dsh.client`, `ctx.theme` or the `shell.overlay` protocol change, compatibility needs a re-check.
+Built against the browser web UI of `@deepseek-ai/dsh`, verified up to `0.1.6-alpha.1`. The Harness is in dev-preview, so a release can move the DOM hooks this plugin leans on (it happened twice: the shell frame lost `data-details-collapsed` in 0.1.5, and the conversation slot was renamed to `main.conversation`).
+
+Three guards exist for that, and none of them require reading this file first:
+
+- `npm run compat` checks the *installed* Harness for every hook the plugin uses and names what a missing one would break. Run it after upgrading the Harness, before restarting the GUI.
+- `window.__harnessWhale.check()` (and `document.documentElement.dataset.hwwStatus`) reports the live state: which surfaces are transparent, how much wallpaper survives at five sample points, and `failed` if the plugin could not mount at all.
+- If a hook moved, the whale simply stops being visible — the shell is left exactly as it was, and [docs/compatibility.md](docs/compatibility.md) lists each hook, its Harness range, and the symptom. `release/*.tgz` holds every previous build for a one-command rollback.
+
+Every hook that turns out to be stale is now a build-time failure: `npm run check` refuses to ship a bundle whose selectors or ink constants drifted.
 
 ## 🗒️ Changelog
 

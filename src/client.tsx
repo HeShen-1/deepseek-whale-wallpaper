@@ -35,9 +35,20 @@ function createWallpaperLifecycle(
 
       void loadConfig(abort.signal).then((config) => {
         if (abort.signal.aborted || !config.enabled) return
-        mount = mountWallpaper(config, ctx.theme.getTheme().active.colorScheme)
-        setMount(mount)
-        stopActivity = watchActivity(ctx, mount.setActivity)
+        try {
+          mount = mountWallpaper(config, ctx.theme.getTheme().active.colorScheme)
+          setMount(mount)
+          stopActivity = watchActivity(ctx, mount.setActivity)
+        } catch (error) {
+          // A Harness change must never take the app down with the wallpaper:
+          // report, mark the page, and leave the shell exactly as it was.
+          document.documentElement.setAttribute('data-hww-status', 'failed')
+          console.error(
+            '[harness-whale] could not mount the wallpaper; the app is left untouched. ' +
+              'Run npm run compat in the plugin checkout and see docs/compatibility.md.',
+            error,
+          )
+        }
       }).catch((error: unknown) => {
         if (!abort.signal.aborted) console.error('[harness-whale] Failed to start wallpaper.', error)
       })

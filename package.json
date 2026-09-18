@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-harness-whale",
-  "version": "0.2.0",
+  "version": "0.3.11",
   "description": "DeepSeek Harness particle-whale wallpaper for the web client",
   "type": "module",
   "repository": {
@@ -33,6 +33,7 @@
     "lib/client.js",
     "lib/*.map",
     "cordis.patch.yml",
+    "docs/compatibility.md",
     "README.md",
     "README.zh-CN.md",
     "LICENSE"
@@ -52,7 +53,8 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "compat": "node scripts/dsh-compat.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/schemastery": "^3.18.1",

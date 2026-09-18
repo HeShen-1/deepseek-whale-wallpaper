@@ -56,6 +56,9 @@ const CONTRACT = [
   ['current conversation hook', '[data-slot="main.conversation"] > [data-phase]'],
   ['welcome screen stays clear', '[data-phase="hero"]'],
   ['reading scrim token', 'var(--hww-reading-scrim)'],
+  ['banded reading scrim', 'dsh-whale-reading-scrim'],
+  ['band scrim uses the soft token', 'background: var(--hww-reading-scrim-soft)'],
+  ['column scrim is the fallback only', ':not([data-hww-zones="on"])'],
   ['welcome halo', 'text-shadow: 0 0 10px var(--hww-hero-halo)'],
   ['live build marker', '.dataset.version = "'],
   ['reading-zone uniforms', 'uZoneCount'],
@@ -86,7 +89,17 @@ for (const alpha of scrims) {
   }
 }
 
-console.log(`shell contract OK (reading scrim ${scrims.join(' / ')})`)
+// The band layer must be the one that covers text: if the column ever paints a
+// background again while the zones are measured, the whole whale goes grey.
+const bandedColumn = /\[data-hww-zones="on"\][^{]*\{[^}]*background:\s*transparent\s*!important/.exec(client)
+if (bandedColumn === null) {
+  throw new Error(
+    'shell contract broken (banded scrim): the conversation column must be transparent while ' +
+      'reading zones are measured, otherwise the scrim washes the whale twice',
+  )
+}
+
+console.log(`shell contract OK (reading scrim ${scrims.join(' / ')}, banded)`)
 
 // ---------------------------------------------------------------------------
 // Palette contract ("never pale again"): model the dot composite for light and
@@ -134,6 +147,17 @@ const FLOOR = { idle: 200, session: 160, active: 120 }
 
 const base = alphaFloor + alphaSpread * SEED
 
+/*
+ * The floors above are a promise about everything that is *not* behind text: with
+ * the scrim scoped to the measured bands, the ink keeps its full strength in the
+ * margins, which is the whole point of the banding. Behind text the scrim is the
+ * readability lever instead, so model that state as well: it has to lower the
+ * dot/pool contrast, and keep it under a ceiling — if a scrim token ever stops
+ * covering the glyphs, text is back on raw dots and this is where it shows.
+ */
+const SCRIM = { light: [244, 248, 255, 0.4], dark: [4, 9, 18, 0.38] }
+const BEHIND_TEXT_CEILING = 170
+
 for (const scheme of ['light', 'dark']) {
   const pool = POOL[scheme]
   for (const [state, opacity] of Object.entries(ACTIVITY)) {
@@ -162,9 +186,20 @@ for (const scheme of ['light', 'dark']) {
           `< floor ${FLOOR[state]}`,
       )
     }
+    const [scrimRed, scrimGreen, scrimBlue, scrimAlpha] = SCRIM[scheme]
+    const scrimColour = [scrimRed, scrimGreen, scrimBlue]
+    const behind = (colour) => mix(colour, scrimColour, scrimAlpha)
+    const behindText = Math.abs(luma(behind(rendered)) - luma(behind(pool)))
+    if (behindText >= contrast || behindText > BEHIND_TEXT_CEILING) {
+      throw new Error(
+        `${scheme} reading scrim no longer protects text at "${state}": modelled contrast behind ` +
+          `text ${behindText.toFixed(0)} (raw dots ${contrast.toFixed(0)}, ceiling ${BEHIND_TEXT_CEILING})`,
+      )
+    }
     console.log(
       `palette ${scheme.padEnd(5)} ${state.padEnd(7)} alpha=${alpha.toFixed(2)} ` +
-        `ink=rgb(${ink.map((c) => Math.round(c * 255)).join(',')}) contrast=${contrast.toFixed(0)}`,
+        `ink=rgb(${ink.map((c) => Math.round(c * 255)).join(',')}) contrast=${contrast.toFixed(0)} ` +
+        `behindText=${behindText.toFixed(0)}`,
     )
   }
 }

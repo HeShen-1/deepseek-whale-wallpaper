@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.3.12 — 2026-09-18
+
+The reading scrim stops at the text, so the ink stops going grey.
+
+- **Why the light whale read grey.** The scrim sat on the whole conversation
+  column, and the wallpaper canvas sits *below* the app frame: a white scrim at
+  0.40 puts a floor of 102 on every pixel behind it, so dots that render as
+  `#050b14` arrived around (95..105) — mid grey — in every margin no glyph ever
+  touched. Measured on one page: raw dot core (6, 8, 12), with the column scrim
+  (95, 97, 103). The standalone preview (every README wallpaper shot) has no
+  shell, so it kept the raw ink, which is why the demo and the live GUI looked
+  like two different themes.
+- **Fix: the scrim follows the text.** `reading-zone.ts` already measured the
+  blocks that carry glyphs; `theme.ts` now paints one feathered band per measured
+  rect (`.dsh-whale-reading-scrim`, inside the wallpaper layer: above the canvas,
+  below the shell) and leaves the column itself transparent while zones are live.
+  A/B on the same page with the same injected text and a frozen canvas: the
+  column-wide scrim changed 76,236 pixels across the whole 600x700 column, the
+  banded scrim changes 1,608 — all of them inside the text band and its feather.
+- **The fallback stays.** When the zones cannot be measured at all the column
+  scrim is still applied (`:not([data-hww-zones="on"])`), because readability
+  outranks wallpaper presence there. An empty conversation now measures as "no
+  bands" rather than "cannot measure", so a fresh session no longer dims the
+  whale behind a column with nothing in it.
+- **Contract.** `npm run check` covers the band layer, the soft token it paints
+  with and the transparent-column rule, and it models the scrimmed contrast next
+  to the raw one: the floors are unchanged and now describe everything that is
+  not behind text, and the behind-text contrast is bounded too, so a token change
+  that quietly stops covering the glyphs fails the build.
+
 ## Demo captures — 2026-09-18 (asset fix, no plugin change)
 
 The README animations were captured on wall time, and wall time does not survive

@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-harness-whale",
-  "version": "0.3.11",
+  "version": "0.3.12",
   "description": "DeepSeek Harness particle-whale wallpaper for the web client",
   "type": "module",
   "repository": {

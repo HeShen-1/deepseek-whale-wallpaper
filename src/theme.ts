@@ -1,6 +1,6 @@
 import type { WallpaperConfig } from './config.ts'
 import { WhaleRenderer, type ActivityState, type WallpaperColorScheme } from './renderer.ts'
-import { watchReadingZones } from './reading-zone.ts'
+import { watchReadingZones, type ZoneRect } from './reading-zone.ts'
 import { watchShellIntegrity } from './self-check.ts'
 
 export type ThemeTokenOverrides = Record<string, { light: string; dark: string }>
@@ -88,15 +88,28 @@ const THEME_STYLE = `
   }
 
   /*
-   * The conversation column carries running text, so it must not sit naked on
-   * the dot matrix. It takes a light reading scrim in every content phase
-   * (active, settling) while the welcome screen (hero) stays clear — the
-   * showcase keeps the full whale, reading gets a calm surface. The slot was
-   * named "conversation" on Harness <= 0.1.2 and "main.conversation" from 0.1.5.
+   * Running text must not sit naked on the dot matrix, but a column-wide veil
+   * dims the whole whale, margins no glyph ever touches included: over a bright
+   * pool a white scrim at 0.40 puts a floor of 102 on every pixel behind it, so
+   * the ink reads grey instead of near-black. The scrim therefore follows the
+   * text itself — the reading-zone watcher measures the blocks that carry glyphs
+   * and the band layer below paints the scrim over those bands only. The column
+   * scrim survives as the fallback for when the zones cannot be measured at all;
+   * readability outranks wallpaper presence there. Slot spellings: "conversation"
+   * on Harness <= 0.1.2, "main.conversation" from 0.1.5.
    */
-  body[data-dsh-harness-whale="true"] [data-slot="conversation"] > [data-phase],
-  body[data-dsh-harness-whale="true"] [data-slot="main.conversation"] > [data-phase] {
+  body[data-dsh-harness-whale="true"]:not([data-hww-zones="on"]) [data-slot="conversation"] > [data-phase]:not([data-phase="hero"]),
+  body[data-dsh-harness-whale="true"]:not([data-hww-zones="on"]) [data-slot="main.conversation"] > [data-phase]:not([data-phase="hero"]) {
     background: var(--hww-reading-scrim) !important;
+  }
+
+  /*
+   * Measured zones: the bands carry the scrim, so the column itself must be
+   * clear — otherwise the whale behind it is washed twice.
+   */
+  body[data-dsh-harness-whale="true"][data-hww-zones="on"] [data-slot="conversation"] > [data-phase],
+  body[data-dsh-harness-whale="true"][data-hww-zones="on"] [data-slot="main.conversation"] > [data-phase] {
+    background: transparent !important;
   }
 
   body[data-dsh-harness-whale="true"] [data-slot="conversation"] > [data-phase="hero"],
@@ -105,15 +118,24 @@ const THEME_STYLE = `
   }
 
   /*
-   * While the renderer can actually measure the text blocks, the dots behind
-   * them shrink instead of fading, so the scrim only has to do the remainder.
-   * The data-hww-zones attribute is written by the reading-zone watcher; when
-   * measurement fails the attribute is off and the solid scrim above stays in
-   * force.
+   * One span per measured text band, positioned in viewport coordinates (the
+   * layer is fixed, and so are the rects). The box-shadow is the feather: a
+   * paragraph ends in a soft edge instead of a rectangle. The bands sit above the
+   * canvas and below the shell, so glyphs still win and the ink between blocks
+   * keeps its full strength.
    */
-  body[data-dsh-harness-whale="true"][data-hww-zones="on"] [data-slot="conversation"] > [data-phase],
-  body[data-dsh-harness-whale="true"][data-hww-zones="on"] [data-slot="main.conversation"] > [data-phase] {
-    background: var(--hww-reading-scrim-soft) !important;
+  .dsh-whale-reading-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .dsh-whale-reading-scrim > span {
+    position: absolute;
+    border-radius: 18px;
+    background: var(--hww-reading-scrim-soft);
+    box-shadow: 0 0 26px 14px var(--hww-reading-scrim-soft);
   }
 
   /*
@@ -410,9 +432,41 @@ export function mountWallpaper(
   }
   document.documentElement.setAttribute('data-hww-status', 'ok')
   const shellWatch = watchShellIntegrity(__HWW_VERSION__, () => activeScheme, ownSurfaces)
+
+  // The measured text bands, painted over the canvas and under the shell. The
+  // spans are pooled: a scroll re-measures on every frame, and replacing the DOM
+  // each time would churn for nothing.
+  const scrim = document.createElement('div')
+  scrim.className = 'dsh-whale-reading-scrim'
+  scrim.setAttribute('aria-hidden', 'true')
+  layer.append(scrim)
+  const bandPool: HTMLSpanElement[] = []
+  const paintScrim = (rects: readonly ZoneRect[] | null): void => {
+    const bands = rects ?? []
+    while (bandPool.length < bands.length) {
+      const band = document.createElement('span')
+      band.setAttribute('aria-hidden', 'true')
+      scrim.append(band)
+      bandPool.push(band)
+    }
+    bandPool.forEach((band, index) => {
+      const rect = bands[index]
+      if (rect === undefined) {
+        band.style.display = 'none'
+        return
+      }
+      band.style.display = ''
+      band.style.left = `${rect.x}px`
+      band.style.top = `${rect.y}px`
+      band.style.width = `${rect.w}px`
+      band.style.height = `${rect.h}px`
+    })
+  }
+
   const zoneWatch = watchReadingZones((rects, showcase) => {
     renderer.setReadingZones(rects)
     renderer.setShowcase(showcase)
+    paintScrim(rects)
     document.body.setAttribute('data-hww-zones', rects === null ? 'off' : 'on')
     document.body.setAttribute('data-hww-showcase', showcase ? 'on' : 'off')
   })

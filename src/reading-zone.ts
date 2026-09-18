@@ -1,15 +1,18 @@
 /**
  * Reading zones: the rectangles that actually carry running text.
  *
- * The conversation column is scrimmed while a session has content, but a scrim
- * dims the whole column — including the margins of the whale that no glyph ever
- * touches. This module measures the text blocks themselves so the renderer can
- * soften the dots *behind text only*, by shrinking them (the ink keeps its
- * brightness) instead of fading the entire column.
+ * A scrim over the whole conversation column also dims the margins of the whale
+ * that no glyph ever touches, and over a bright pool a white scrim at 0.40 puts a
+ * floor of 102 under everything behind it — the ink reads grey instead of
+ * near-black. This module measures the text blocks themselves, so the scrim can
+ * cover those bands only and the renderer can soften the dots behind text by
+ * shrinking them (the ink keeps its brightness).
  *
- * A `null` answer means "cannot measure": the caller then keeps the plain scrim,
- * because readability outranks wallpaper presence. Zones are also `null` on the
- * welcome screen, which is the wallpaper's showcase.
+ * `null` means "cannot measure": the caller then keeps the plain column scrim,
+ * because readability outranks wallpaper presence. An empty array means the
+ * column was measured and carries no text — a fresh session, or a phase that has
+ * not rendered anything yet — so nothing needs protecting. Zones are also `null`
+ * on the welcome screen, which is the wallpaper's showcase.
  */
 export interface ZoneRect {
   x: number
@@ -115,8 +118,9 @@ export function isShowcasePhase(): boolean {
 
 /**
  * Collect the visible text blocks of the conversation, clipped to the scroller.
- * @returns merged rectangles, or `null` when the conversation cannot be measured
- *          (missing hook or welcome screen); overflow bands are fused, not dropped.
+ * @returns merged rectangles (empty when the column holds no text), or `null` when
+ *          the conversation cannot be measured (missing hook or welcome screen);
+ *          overflow bands are fused, not dropped.
  */
 export function measureReadingZones(): ZoneRect[] | null {
   const column = columnElement()
@@ -138,7 +142,7 @@ export function measureReadingZones(): ZoneRect[] | null {
     if (bottom - top < MIN_VISIBLE_HEIGHT || right - left < MIN_VISIBLE_WIDTH) continue
     rects.push({ x: left, y: top, w: right - left, h: bottom - top })
   }
-  if (rects.length === 0) return null
+  if (rects.length === 0) return []
 
   const merged = fuseToLimit(mergeVertically(rects), MAX_ZONES)
   return merged.map((rect) => ({

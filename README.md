@@ -97,7 +97,7 @@ Values are validated host-side by Schemastery and served to the client through a
 - ~11 s vertical breathing, a ~29 s slow turn, plus tail-fin motion and gentle buoyancy; the pointer adds ~6° parallax and a positional offset.
 - Inside the whale, particles within ~200 px of the pointer form a continuous liquid vortex (motion-only feedback, no brightness or size change); after the pointer leaves they settle back softly in ~800 ms. The base dot matrix is never modified.
 - Follows the Harness appearance setting (light / dark / system): dark keeps white→ice-blue particles over a deepened pool, light switches to high-contrast ink `#050b14` over a brightened pool, with matching semantic tokens, mist layers and background.
-- Both themes expose the full-screen base layer behind the app frame; sidebar, inputs, conversation content and settings windows keep their own surfaces — no full-screen veil washing out the dots.
+- Both themes expose the full-screen base layer behind the app frame; sidebar, inputs, conversation content and settings windows keep their own surfaces — no full-screen veil washing out the dots. The reading scrim covers the measured text blocks only, not the whole column, so the ink keeps its near-black (light) / white (dark) value in every margin no glyph touches.
 - Full brightness with no session open; ~78 % once a session opens; at least 50 % while typing or a task runs (still honors a stronger `activeDimming`), ~600 ms transitions.
 - Pauses when the page is hidden; completely still under `prefers-reduced-motion: reduce`.
 - DPR capped at 1.5; `auto` steps down high → medium → low after sustained frame drops.
@@ -114,6 +114,8 @@ src/
 ├── client.tsx      client entry — mounts through shell.overlay slot
 ├── renderer.ts     the single WebGL2 render kernel (shared with the preview)
 ├── theme.ts        semantic token overrides + injected CSS
+├── reading-zone.ts measures the text blocks the scrim and dot softening cover
+├── self-check.ts   re-validates the shell surfaces after a Harness update
 ├── activity.ts     session/input/run focus dimming
 ├── whale-path.ts   samples the favicon.svg outline into grid points
 └── config.ts       Schemastery schema + defaults
